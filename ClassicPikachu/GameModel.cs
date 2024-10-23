@@ -20,24 +20,32 @@ namespace ClassicPikachu
 
             table = new int[height, width];
 
-            HashSet<int> cellIndex = new HashSet<int>();
-
             Random random = new Random();
 
             for (int i = 0; i < width * height / 2; i++)
             {
-                int type = random.Next(0, numOfType);
-                int firstCell = random.Next(random.Next(0, width * height + 1));
-                while (cellIndex.Contains(firstCell))
-                    firstCell = random.Next(random.Next(0, width * height + 1));
-                table[firstCell / width, firstCell % width] = type;
-                cellIndex.Add(firstCell);
+                int type = random.Next(1, numOfType);
+                
+                //First Cell
+                int x1 = random.Next(0, height);
+                int y1 = random.Next(0, width);
+                while (table[x1, y1] != 0) {
+                    x1 = random.Next(0, height);
+                    y1 = random.Next(0, width);
+                }
 
-                int secondCell = random.Next(random.Next(0, width * height + 1));
-                while (cellIndex.Contains(secondCell))
-                    secondCell = random.Next(random.Next(0, width * height + 1));
-                table[secondCell / width, secondCell % width] = type;
-                cellIndex.Add(secondCell);
+                table[x1, y1] = type;
+
+                //Second Cell
+                int x2 = random.Next(0, height);
+                int y2 = random.Next(0, width);
+                while (table[x2, y2] != 0)
+                {
+                    x2 = random.Next(0, height);
+                    y2 = random.Next(0, width);
+                }
+
+                table[x2, y2] = type;
             }
         }
         public int GetCell(int i, int j) => table[i, j];
