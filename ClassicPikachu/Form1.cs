@@ -180,11 +180,13 @@ namespace ClassicPikachu
                         lblTags[idx1].Text = grid[x1, y1].ToString();
                         lblTags[idx2].Text = grid[x2, y2].ToString();
 
-                        firstClicked.Dispose();
-                        secondClicked.Dispose();
+                        firstClicked.Visible = false;
+                        secondClicked.Visible = false;
 
                         pictureBoxes[idx1].Tag = -1;
                         pictureBoxes[idx2].Tag = -1;
+
+                        MessageBox.Show(pictureBoxes.Count() + "");
                     }
                     else
                     {
@@ -370,34 +372,37 @@ namespace ClassicPikachu
         {
             Random random = new Random();
 
-            // Lấy tất cả các Tag hợp lệ, bao gồm cả những ô đã ăn được (Tag = -1)
             var tags = pictureBoxes.Where(pb => (int)pb.Tag != 0).Select(pb => pb.Tag).ToList();
 
-            // Kiểm tra nếu không có Tag nào hợp lệ để shuffle
             if (tags.Count == 0)
             {
                 MessageBox.Show("Không có Tag hợp lệ nào để shuffle!");
                 return;
             }
 
-            // Shuffle danh sách Tag
             tags = tags.OrderBy(x => random.Next()).ToList();
 
-            // Gán lại Tag sau khi shuffle cho toàn bộ PictureBox có Tag != 0
+            tags.ForEach(p  => { Debug.WriteLine(p); });
             int index = 0;
+
             foreach (var pb in pictureBoxes)
             {
-                if ((int)pb.Tag != 0) // Bao gồm cả ô có Tag = -1
+                if ((int)pb.Tag != 0) 
                 {
-                    pb.Tag = tags[index];
-                    if ((int)tags[index] != -1) // Gán hình ảnh cho các Tag hợp lệ
+
+                    if ((int)tags[index] == -1)
+                    {
+                        pb.Tag = -1;
+                        pb.Image = null;
+                        pb.Visible = false;
+                    }
+                    else
                     {
                         pb.Image = images[(int)tags[index]];
+                        pb.Tag = (int)tags[index];
+                        pb.Visible = true;
                     }
-                    else // Nếu là Tag = -1 thì để trống hình ảnh
-                    {
-                        pb.Image = null;
-                    }
+
                     index++;
                 }
             }
