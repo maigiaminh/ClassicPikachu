@@ -1,5 +1,7 @@
-﻿using System.Diagnostics;
+﻿using NAudio.Wave;
+using System.Diagnostics;
 using System.Drawing.Imaging;
+using System.Media;
 
 namespace ClassicPikachu
 {
@@ -17,12 +19,21 @@ namespace ClassicPikachu
 
         private int matchCount = 0;
         private bool delay = false;
+        private int timeLeft = 100;
 
         private List<PictureBox> pictureBoxes = new List<PictureBox>();
         private List<Point> path = new List<Point>();
         private System.Windows.Forms.Timer clearPathTimer = new System.Windows.Forms.Timer();
         private System.Windows.Forms.Timer checkMoveTimer = new System.Windows.Forms.Timer();
         private System.Windows.Forms.Timer delayPressTimer = new System.Windows.Forms.Timer();
+        private System.Windows.Forms.Timer countdownTimer = new System.Windows.Forms.Timer();
+
+        private bool isMusicOn = true;
+        private bool isSoundOn = true;
+
+        private AudioManager audioManager;
+
+
 
         private void LoadImages()
         {
@@ -71,6 +82,10 @@ namespace ClassicPikachu
 
             LoadImages();
 
+            audioManager = new AudioManager();
+            audioManager.StartBackgroundMusic(1);
+
+            /*
             clearPathTimer.Interval = 500;
             clearPathTimer.Tick += ClearPathTimer_Tick;
 
@@ -80,12 +95,19 @@ namespace ClassicPikachu
             delayPressTimer.Interval = 1000;
             delayPressTimer.Tick += DelayPressTimer_Tick;
 
+            countdownTimer.Interval = 1000;
+            countdownTimer.Tick += CountdownTimer_Tick;
+            countdownTimer.Start();
+
             gameModel = new GameModel(12, 9, 36);
             grid = new int[gameModel.Width, gameModel.Height];
 
             px = new PictureBox[gameModel.Height * gameModel.Width];
             lblTags = new Label[gameModel.Height * gameModel.Width];
 
+            progressBar1.Maximum = 100;
+            progressBar1.Value = timeLeft;
+            
             for (int i = 0; i < gameModel.Height; i++)
             {
                 for (int j = 0; j < gameModel.Width; j++)
@@ -115,7 +137,7 @@ namespace ClassicPikachu
 
                     pictureBoxes.Add(px[idx]);
 
-                    /*
+                    
                     lblTags[idx] = new Label();
                     lblTags[idx].Width = 24;
                     lblTags[idx].Height = 16;
@@ -129,7 +151,7 @@ namespace ClassicPikachu
                                                       px[idx].Top + (px[idx].Height - lblTags[idx].Height) / 2);
                     this.Controls.Add(lblTags[idx]);
 
-                    */
+                    
                     this.Controls.Add(px[idx]);
 
                     if ((int)px[idx].Tag == 0)
@@ -137,7 +159,8 @@ namespace ClassicPikachu
                         px[idx].Dispose();
                     }
                 }
-            }
+      
+            }*/
         }
         public void pictureBoxMouseHoverEventhandle(object sender, EventArgs e)
         {
@@ -396,6 +419,20 @@ namespace ClassicPikachu
             delay = false;
         }
 
+        private void CountdownTimer_Tick(object sender, EventArgs e)
+        {
+            if (timeLeft > 0)
+            {
+                timeLeft--;
+                //progressBar1.Value = timeLeft;
+            }
+            else
+            {
+                countdownTimer.Stop();
+                MessageBox.Show("Hết thời gian!");
+            }
+        }
+
         private void ShuffleTable()
         {
             Random random = new Random();
@@ -410,15 +447,15 @@ namespace ClassicPikachu
 
             tags = tags.OrderBy(x => random.Next()).ToList();
 
-            tags.ForEach(p  => { Debug.WriteLine(p); });
+            tags.ForEach(p => { Debug.WriteLine(p); });
             int index = 0;
 
             foreach (var pb in pictureBoxes)
             {
-                int row = (pb.Top - 50) / 50;  
-                int col = (pb.Left - 50) / 40; 
+                int row = (pb.Top - 50) / 50;
+                int col = (pb.Left - 50) / 40;
 
-                if ((int)pb.Tag != 0) 
+                if ((int)pb.Tag != 0)
                 {
 
                     if ((int)tags[index] == -1)
@@ -454,7 +491,7 @@ namespace ClassicPikachu
         {
             for (int i = 0; i < pictureBoxes.Count; i++)
             {
-                var pb1 = pictureBoxes[i]; 
+                var pb1 = pictureBoxes[i];
 
                 if ((int)pb1.Tag == 0 || (int)pb1.Tag == -1)
                     continue;
@@ -486,18 +523,68 @@ namespace ClassicPikachu
             {
                 MessageBox.Show("Không còn nước đi, shuffle lại bàn chơi!");
                 ShuffleTable();
-            } 
+            }
         }
 
         private bool IsPathClear(PictureBox pb1, PictureBox pb2)
         {
-            int x1 = (pb1.Left - 50) / 40;  
+            int x1 = (pb1.Left - 50) / 40;
             int y1 = (pb1.Top - 50) / 50;
             int x2 = (pb2.Left - 50) / 40;
             int y2 = (pb2.Top - 50) / 50;
 
-
             return (IsShortestPath(grid, new Point(x1, y1), new Point(x2, y2)));
+        }
+
+        private void btnQuit_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
+        }
+
+
+        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            audioManager.backgroundPlayer?.Dispose();
+            audioManager.backgroundMusic?.Dispose();
+            audioManager.backgroundPlayer = null;
+            audioManager.backgroundMusic = null;
+        }
+
+        private void btnMusic_Click(object sender, EventArgs e)
+        {
+            audioManager.PlaySoundEffect("click");
+            isMusicOn = !isMusicOn;
+            if (isMusicOn)
+            {
+                btnMusic.Image = Properties.Resources.music_on;
+                audioManager.MuteBackgroundMusic(false);
+            }
+            else
+            {
+                btnMusic.Image = Properties.Resources.music_off;
+                audioManager.MuteBackgroundMusic(true);
+            }
+        }
+
+        private void btnPlay_Click(object sender, EventArgs e)
+        {
+            audioManager.PlaySoundEffect("click", 1f);
+        }
+
+        private void btnSound_Click(object sender, EventArgs e)
+        {
+            audioManager.PlaySoundEffect("click");
+            isSoundOn = !isSoundOn;
+            if (isSoundOn)
+            {
+                btnSound.Image = Properties.Resources.sound_on;
+                audioManager.MuteSoundEffects(false);
+            }
+            else
+            {
+                btnSound.Image = Properties.Resources.sound_off;
+                audioManager.MuteSoundEffects(true);
+            }
         }
     }
 }
