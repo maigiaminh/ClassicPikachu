@@ -37,6 +37,7 @@
             ClientSize = new Size(904, 549);
             Name = "Form1";
             Text = "Form1";
+            Paint += Form1_Paint;
             ResumeLayout(false);
         }
 

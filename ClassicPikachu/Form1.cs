@@ -1,4 +1,6 @@
-﻿using System.Drawing.Imaging;
+﻿using System.Diagnostics;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Windows.Forms;
 
 namespace ClassicPikachu
@@ -13,6 +15,9 @@ namespace ClassicPikachu
         Label[] lblTags;
         private int matchCount = 0;
         private List<PictureBox> pictureBoxes = new List<PictureBox>();
+        private List<Point> path = new List<Point>();
+        private System.Windows.Forms.Timer clearPathTimer = new System.Windows.Forms.Timer();
+
         private void LoadImages()
         {
             images = new Image[36];
@@ -57,11 +62,15 @@ namespace ClassicPikachu
         public Form1()
         {
             InitializeComponent();
-            
+
             LoadImages();
+
+            clearPathTimer.Interval = 1000;
+            clearPathTimer.Tick += ClearPathTimer_Tick;
+
             GameModel gameModel = new GameModel(8, 5, 15);
             grid = new int[8, 5];
-            
+
             px = new PictureBox[gameModel.Height * gameModel.Width];
             lblTags = new Label[gameModel.Height * gameModel.Width];
 
@@ -73,7 +82,7 @@ namespace ClassicPikachu
                     int tag = gameModel.GetCell(i, j);
 
                     grid[j, i] = tag;
-
+                    
                     px[idx] = new PictureBox();
 
                     px[idx].Width = 40;
@@ -91,23 +100,26 @@ namespace ClassicPikachu
                     px[idx].MouseHover += new EventHandler(pictureBoxMouseHoverEventhandle);
                     px[idx].MouseLeave += new EventHandler(pictureBoxMouseLeaveEventhandle);
 
+                    
+
                     lblTags[idx] = new Label();
                     lblTags[idx].Width = 24;
                     lblTags[idx].Height = 16;
-                    lblTags[idx].Text = tag.ToString(); // Hiển thị giá trị Tag
+                    lblTags[idx].Text = tag.ToString();
                     lblTags[idx].TextAlign = ContentAlignment.MiddleCenter;
                     lblTags[idx].BackColor = Color.Transparent;
-                    lblTags[idx].ForeColor = Color.Black; // Màu chữ
+                    lblTags[idx].ForeColor = Color.Black;
                     lblTags[idx].Font = new Font("Arial", 8, FontStyle.Bold);
                     lblTags[idx].BackColor = Color.Transparent;
-                    // Đặt vị trí label giữa PictureBox
                     lblTags[idx].Location = new Point(px[idx].Left + (px[idx].Width - lblTags[idx].Width) / 2,
                                                       px[idx].Top + (px[idx].Height - lblTags[idx].Height) / 2);
                     this.Controls.Add(lblTags[idx]);
                     this.Controls.Add(px[idx]);
 
+                    if ((int)px[idx].Tag == 0)
+                        px[idx].Dispose();
                 }
-           
+
         }
         public void pictureBoxMouseHoverEventhandle(object sender, EventArgs e)
         {
@@ -131,7 +143,7 @@ namespace ClassicPikachu
         public void pictureBoxClickEventhandle(object sender, EventArgs e)
         {
             PictureBox pb = sender as PictureBox;
-            
+
             if (pb != null)
             {
                 if (firstClicked == null)
@@ -139,18 +151,17 @@ namespace ClassicPikachu
                     pb.Image = SetImageOpacity(pb.Image, 0.4f);
                     firstClicked = pb;
                 }
-                else 
+                else
                 {
-                    if(firstClicked == pb || (int)firstClicked.Tag != (int)pb.Tag)
+                    if (firstClicked == pb || (int)firstClicked.Tag != (int)pb.Tag)
                     {
-                        MessageBox.Show("TÉT");
                         firstClicked.Image = images[(int)firstClicked.Tag];
                         firstClicked = null;
                         return;
                     }
 
 
-                    firstClicked.Image = images[(int) firstClicked.Tag];
+                    firstClicked.Image = images[(int)firstClicked.Tag];
                     secondClicked = pb;
                     int x1 = (firstClicked.Left - 50) / 40;
                     int y1 = (firstClicked.Top - 50) / 50;
@@ -184,7 +195,7 @@ namespace ClassicPikachu
             Graphics g = Graphics.FromImage(bmp);
 
             ColorMatrix colorMatrix = new ColorMatrix();
-            colorMatrix.Matrix33 = opacity; 
+            colorMatrix.Matrix33 = opacity;
 
             ImageAttributes attributes = new ImageAttributes();
             attributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
@@ -202,14 +213,15 @@ namespace ClassicPikachu
             int rows = grid.GetLength(0);
             int cols = grid.GetLength(1);
 
-            int[] dx = { 0, 0, -1, 1 }; // Các hướng di chuyển: Trái, Phải, Lên, Xuống
+            int[] dx = { 0, 0, -1, 1 };
             int[] dy = { -1, 1, 0, 0 };
 
             bool[,,] visited = new bool[rows, cols, 4];
 
+            (int x, int y, int dir)[,,] parent = new (int, int, int)[rows, cols, 4];
+
             Queue<(int x, int y, int dir, int turns)> queue = new Queue<(int, int, int, int)>();
 
-            // Nếu start và end là 2 điểm kề nhau, trả về true ngay lập tức
             for (int i = 0; i < 4; i++)
             {
                 int adjX = start.X + dx[i];
@@ -217,11 +229,16 @@ namespace ClassicPikachu
 
                 if (adjX == end.X && adjY == end.Y)
                 {
-                    return true; // start và end kề nhau
+                    Debug.WriteLine($"Shortest path: ({start.X}, {start.Y}) -> ({end.X}, {end.Y})");
+                    
+                    path.Add(new Point(start.X, start.Y));
+                    path.Add(new Point(end.X, end.Y));
+                    UpdatePath(path);
+                    clearPathTimer.Start(); 
+                    return true;
                 }
             }
 
-            // Khởi tạo hàng đợi với tất cả các hướng từ điểm bắt đầu
             for (int i = 0; i < 4; i++)
             {
                 int newX = start.X + dx[i];
@@ -231,6 +248,7 @@ namespace ClassicPikachu
                 {
                     queue.Enqueue((newX, newY, i, 1));
                     visited[newX, newY, i] = true;
+                    parent[newX, newY, i] = (start.X, start.Y, -1);
                 }
             }
 
@@ -238,31 +256,49 @@ namespace ClassicPikachu
             {
                 var (x, y, dir, turns) = queue.Dequeue();
 
-                // Nếu đạt tới điểm kết thúc, trả về true
                 if (x == end.X && y == end.Y)
                 {
+                    List<Point> path = new List<Point>();
+                    path.Add(new Point(x, y));
+
+                    while (!(x == start.X && y == start.Y))
+                    {
+                        var (prevX, prevY, prevDir) = parent[x, y, dir];
+                        path.Add(new Point(prevX, prevY));
+                        x = prevX;
+                        y = prevY;
+                        dir = prevDir;
+                    }
+
+                    path.Reverse();
+                    Debug.WriteLine("Shortest path:");
+                    foreach (var p in path)
+                    {
+                        Debug.WriteLine($"({p.X}, {p.Y})");
+                    }
+                    UpdatePath(path);
+
+                    clearPathTimer.Start();
+
                     return true;
                 }
 
-                // Tiếp tục di chuyển theo hướng hiện tại
                 int newX = x + dx[dir];
                 int newY = y + dy[dir];
 
-                // Kiểm tra ô mới có nằm trong phạm vi
                 if (newX >= 0 && newY >= 0 && newX < rows && newY < cols)
                 {
-                    // Nếu là điểm kết thúc, không cần kiểm tra giá trị của grid
                     if ((newX == end.X && newY == end.Y) || grid[newX, newY] == 0)
                     {
                         if (!visited[newX, newY, dir])
                         {
                             visited[newX, newY, dir] = true;
                             queue.Enqueue((newX, newY, dir, turns));
+                            parent[newX, newY, dir] = (x, y, dir);
                         }
                     }
                 }
 
-                // Nếu chưa quá 3 lần rẽ, thử di chuyển theo hướng mới
                 if (turns < 3)
                 {
                     for (int i = 0; i < 4; i++)
@@ -274,13 +310,13 @@ namespace ClassicPikachu
 
                             if (newX >= 0 && newY >= 0 && newX < rows && newY < cols)
                             {
-                                // Nếu là điểm kết thúc, không cần kiểm tra giá trị của grid
                                 if ((newX == end.X && newY == end.Y) || grid[newX, newY] == 0)
                                 {
                                     if (!visited[newX, newY, i])
                                     {
                                         visited[newX, newY, i] = true;
                                         queue.Enqueue((newX, newY, i, turns + 1));
+                                        parent[newX, newY, i] = (x, y, dir);
                                     }
                                 }
                             }
@@ -291,7 +327,36 @@ namespace ClassicPikachu
 
             return false;
         }
+        private void UpdatePath(List<Point> newPath)
+        {
+            path = newPath;
+            this.Invalidate();
+        }
 
+        private void DrawPath(Graphics g)
+        {
+            if (path.Count < 2) return;
 
+            using (Pen pen = new Pen(Color.FromArgb(0, 255, 66), 5))
+            {
+                for (int i = 0; i < path.Count - 1; i++)
+                {
+                    Point point1 = new Point(path[i].X * 40 + 50 + 20, path[i].Y * 50 + 50 + 25);
+                    Point point2 = new Point(path[i + 1].X * 40 + 50 + 20, path[i + 1].Y * 50 + 50 + 25);
+                    g.DrawLine(pen, point1, point2);
+                }
+            }
+        }
+
+        private void Form1_Paint(object sender, PaintEventArgs e)
+        {
+            DrawPath(e.Graphics);
+        }
+        private void ClearPathTimer_Tick(object sender, EventArgs e)
+        {
+            path.Clear();
+            this.Invalidate();
+            clearPathTimer.Stop();
+        }
     }
 }
