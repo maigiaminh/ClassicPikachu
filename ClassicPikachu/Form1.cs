@@ -2,6 +2,7 @@
 using System.Drawing.Imaging;
 using System.IO;
 using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ClassicPikachu
 {
@@ -13,6 +14,7 @@ namespace ClassicPikachu
         private PictureBox secondClicked = null;
         PictureBox[] px;
         Label[] lblTags;
+        GameModel gameModel;
         private int matchCount = 0;
         private List<PictureBox> pictureBoxes = new List<PictureBox>();
         private List<Point> path = new List<Point>();
@@ -68,8 +70,8 @@ namespace ClassicPikachu
             clearPathTimer.Interval = 1000;
             clearPathTimer.Tick += ClearPathTimer_Tick;
 
-            GameModel gameModel = new GameModel(8, 5, 15);
-            grid = new int[8, 5];
+            gameModel = new GameModel(8, 5, 15);
+            grid = new int[gameModel.Width, gameModel.Height];
 
             px = new PictureBox[gameModel.Height * gameModel.Width];
             lblTags = new Label[gameModel.Height * gameModel.Width];
@@ -82,7 +84,7 @@ namespace ClassicPikachu
                     int tag = gameModel.GetCell(i, j);
 
                     grid[j, i] = tag;
-                    
+
                     px[idx] = new PictureBox();
 
                     px[idx].Width = 40;
@@ -100,7 +102,7 @@ namespace ClassicPikachu
                     px[idx].MouseHover += new EventHandler(pictureBoxMouseHoverEventhandle);
                     px[idx].MouseLeave += new EventHandler(pictureBoxMouseLeaveEventhandle);
 
-                    
+                    pictureBoxes.Add(px[idx]);
 
                     lblTags[idx] = new Label();
                     lblTags[idx].Width = 24;
@@ -117,7 +119,9 @@ namespace ClassicPikachu
                     this.Controls.Add(px[idx]);
 
                     if ((int)px[idx].Tag == 0)
+                    {
                         px[idx].Dispose();
+                    }
                 }
 
         }
@@ -169,8 +173,8 @@ namespace ClassicPikachu
                     int y2 = (secondClicked.Top - 50) / 50;
                     if (IsShortestPath(grid, new Point(x1, y1), new Point(x2, y2)))
                     {
-                        grid[x1, y1] = 0;
-                        grid[x2, y2] = 0;
+                        grid[x1, y1] = -1;
+                        grid[x2, y2] = -1;
                         int idx1 = y1 * grid.GetLength(0) + x1;
                         int idx2 = y2 * grid.GetLength(0) + x2;
                         lblTags[idx1].Text = grid[x1, y1].ToString();
@@ -178,6 +182,9 @@ namespace ClassicPikachu
 
                         firstClicked.Dispose();
                         secondClicked.Dispose();
+
+                        pictureBoxes[idx1].Tag = -1;
+                        pictureBoxes[idx2].Tag = -1;
                     }
                     else
                     {
@@ -230,11 +237,11 @@ namespace ClassicPikachu
                 if (adjX == end.X && adjY == end.Y)
                 {
                     Debug.WriteLine($"Shortest path: ({start.X}, {start.Y}) -> ({end.X}, {end.Y})");
-                    
+
                     path.Add(new Point(start.X, start.Y));
                     path.Add(new Point(end.X, end.Y));
                     UpdatePath(path);
-                    clearPathTimer.Start(); 
+                    clearPathTimer.Start();
                     return true;
                 }
             }
@@ -244,7 +251,7 @@ namespace ClassicPikachu
                 int newX = start.X + dx[i];
                 int newY = start.Y + dy[i];
 
-                if (newX >= 0 && newY >= 0 && newX < rows && newY < cols && grid[newX, newY] == 0)
+                if (newX >= 0 && newY >= 0 && newX < rows && newY < cols && (grid[newX, newY] == 0 || grid[newX, newY] == -1))
                 {
                     queue.Enqueue((newX, newY, i, 1));
                     visited[newX, newY, i] = true;
@@ -288,7 +295,7 @@ namespace ClassicPikachu
 
                 if (newX >= 0 && newY >= 0 && newX < rows && newY < cols)
                 {
-                    if ((newX == end.X && newY == end.Y) || grid[newX, newY] == 0)
+                    if ((newX == end.X && newY == end.Y) || (grid[newX, newY] == 0 || grid[newX, newY] == -1))
                     {
                         if (!visited[newX, newY, dir])
                         {
@@ -310,7 +317,7 @@ namespace ClassicPikachu
 
                             if (newX >= 0 && newY >= 0 && newX < rows && newY < cols)
                             {
-                                if ((newX == end.X && newY == end.Y) || grid[newX, newY] == 0)
+                                if ((newX == end.X && newY == end.Y) || (grid[newX, newY] == 0 || grid[newX, newY] == -1))
                                 {
                                     if (!visited[newX, newY, i])
                                     {
@@ -357,6 +364,49 @@ namespace ClassicPikachu
             path.Clear();
             this.Invalidate();
             clearPathTimer.Stop();
+        }
+
+        private void ShuffleTable()
+        {
+            Random random = new Random();
+
+            // Lấy tất cả các Tag hợp lệ, bao gồm cả những ô đã ăn được (Tag = -1)
+            var tags = pictureBoxes.Where(pb => (int)pb.Tag != 0).Select(pb => pb.Tag).ToList();
+
+            // Kiểm tra nếu không có Tag nào hợp lệ để shuffle
+            if (tags.Count == 0)
+            {
+                MessageBox.Show("Không có Tag hợp lệ nào để shuffle!");
+                return;
+            }
+
+            // Shuffle danh sách Tag
+            tags = tags.OrderBy(x => random.Next()).ToList();
+
+            // Gán lại Tag sau khi shuffle cho toàn bộ PictureBox có Tag != 0
+            int index = 0;
+            foreach (var pb in pictureBoxes)
+            {
+                if ((int)pb.Tag != 0) // Bao gồm cả ô có Tag = -1
+                {
+                    pb.Tag = tags[index];
+                    if ((int)tags[index] != -1) // Gán hình ảnh cho các Tag hợp lệ
+                    {
+                        pb.Image = images[(int)tags[index]];
+                    }
+                    else // Nếu là Tag = -1 thì để trống hình ảnh
+                    {
+                        pb.Image = null;
+                    }
+                    index++;
+                }
+            }
+
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            ShuffleTable();
         }
     }
 }
