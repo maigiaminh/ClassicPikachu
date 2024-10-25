@@ -1,8 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Drawing.Imaging;
-using System.IO;
-using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ClassicPikachu
 {
@@ -10,15 +7,22 @@ namespace ClassicPikachu
     {
         private Image[] images;
         private int[,] grid;
+
         private PictureBox firstClicked = null;
         private PictureBox secondClicked = null;
-        PictureBox[] px;
-        Label[] lblTags;
-        GameModel gameModel;
+
+        private PictureBox[] px;
+        private Label[] lblTags;
+        private GameModel gameModel;
+
         private int matchCount = 0;
+        private bool delay = false;
+
         private List<PictureBox> pictureBoxes = new List<PictureBox>();
         private List<Point> path = new List<Point>();
         private System.Windows.Forms.Timer clearPathTimer = new System.Windows.Forms.Timer();
+        private System.Windows.Forms.Timer checkMoveTimer = new System.Windows.Forms.Timer();
+        private System.Windows.Forms.Timer delayPressTimer = new System.Windows.Forms.Timer();
 
         private void LoadImages()
         {
@@ -67,10 +71,16 @@ namespace ClassicPikachu
 
             LoadImages();
 
-            clearPathTimer.Interval = 1000;
+            clearPathTimer.Interval = 500;
             clearPathTimer.Tick += ClearPathTimer_Tick;
 
-            gameModel = new GameModel(8, 5, 15);
+            checkMoveTimer.Interval = 800;
+            checkMoveTimer.Tick += CheckMoveTimer_Tick;
+
+            delayPressTimer.Interval = 1000;
+            delayPressTimer.Tick += DelayPressTimer_Tick;
+
+            gameModel = new GameModel(12, 9, 36);
             grid = new int[gameModel.Width, gameModel.Height];
 
             px = new PictureBox[gameModel.Height * gameModel.Width];
@@ -105,6 +115,7 @@ namespace ClassicPikachu
 
                     pictureBoxes.Add(px[idx]);
 
+                    /*
                     lblTags[idx] = new Label();
                     lblTags[idx].Width = 24;
                     lblTags[idx].Height = 16;
@@ -117,6 +128,8 @@ namespace ClassicPikachu
                     lblTags[idx].Location = new Point(px[idx].Left + (px[idx].Width - lblTags[idx].Width) / 2,
                                                       px[idx].Top + (px[idx].Height - lblTags[idx].Height) / 2);
                     this.Controls.Add(lblTags[idx]);
+
+                    */
                     this.Controls.Add(px[idx]);
 
                     if ((int)px[idx].Tag == 0)
@@ -147,6 +160,8 @@ namespace ClassicPikachu
         }
         public void pictureBoxClickEventhandle(object sender, EventArgs e)
         {
+            if (delay == true) return;
+
             PictureBox pb = sender as PictureBox;
 
             if (pb != null)
@@ -174,12 +189,14 @@ namespace ClassicPikachu
                     int y2 = (secondClicked.Top - 50) / 50;
                     if (IsShortestPath(grid, new Point(x1, y1), new Point(x2, y2)))
                     {
+                        delay = true;
+
                         grid[x1, y1] = -1;
                         grid[x2, y2] = -1;
                         int idx1 = y1 * grid.GetLength(0) + x1;
                         int idx2 = y2 * grid.GetLength(0) + x2;
-                        lblTags[idx1].Text = grid[x1, y1].ToString();
-                        lblTags[idx2].Text = grid[x2, y2].ToString();
+                        //lblTags[idx1].Text = grid[x1, y1].ToString();
+                        //lblTags[idx2].Text = grid[x2, y2].ToString();
 
                         firstClicked.Visible = false;
                         secondClicked.Visible = false;
@@ -187,11 +204,13 @@ namespace ClassicPikachu
                         pictureBoxes[idx1].Tag = -1;
                         pictureBoxes[idx2].Tag = -1;
 
-                        MessageBox.Show(pictureBoxes.Count() + "");
+                        clearPathTimer.Start();
+                        checkMoveTimer.Start();
+                        delayPressTimer.Start();
                     }
                     else
                     {
-                        MessageBox.Show("NOT OK");
+
                     }
                     firstClicked = null;
                     secondClicked = null;
@@ -244,7 +263,6 @@ namespace ClassicPikachu
                     path.Add(new Point(start.X, start.Y));
                     path.Add(new Point(end.X, end.Y));
                     UpdatePath(path);
-                    clearPathTimer.Start();
                     return true;
                 }
             }
@@ -287,9 +305,6 @@ namespace ClassicPikachu
                         Debug.WriteLine($"({p.X}, {p.Y})");
                     }
                     UpdatePath(path);
-
-                    clearPathTimer.Start();
-
                     return true;
                 }
 
@@ -354,6 +369,7 @@ namespace ClassicPikachu
                     Point point1 = new Point(path[i].X * 40 + 50 + 20, path[i].Y * 50 + 50 + 25);
                     Point point2 = new Point(path[i + 1].X * 40 + 50 + 20, path[i + 1].Y * 50 + 50 + 25);
                     g.DrawLine(pen, point1, point2);
+
                 }
             }
         }
@@ -367,6 +383,17 @@ namespace ClassicPikachu
             path.Clear();
             this.Invalidate();
             clearPathTimer.Stop();
+        }
+        private void CheckMoveTimer_Tick(object sender, EventArgs e)
+        {
+            checkMoveTimer.Stop();
+            CheckAndShuffleTable();
+        }
+
+        private void DelayPressTimer_Tick(object sender, EventArgs e)
+        {
+            delayPressTimer.Stop();
+            delay = false;
         }
 
         private void ShuffleTable()
@@ -417,6 +444,60 @@ namespace ClassicPikachu
         private void button1_Click(object sender, EventArgs e)
         {
             ShuffleTable();
+            while (!HasValidMove())
+            {
+                ShuffleTable();
+            }
+        }
+
+        private bool HasValidMove()
+        {
+            for (int i = 0; i < pictureBoxes.Count; i++)
+            {
+                var pb1 = pictureBoxes[i]; 
+
+                if ((int)pb1.Tag == 0 || (int)pb1.Tag == -1)
+                    continue;
+                for (int j = i + 1; j < pictureBoxes.Count; j++)
+                {
+                    var pb2 = pictureBoxes[j];
+
+                    if ((int)pb2.Tag == 0 || (int)pb2.Tag == -1)
+                        continue;
+
+                    if (pb1.Tag.Equals(pb2.Tag))
+                    {
+                        if (IsPathClear(pb1, pb2))
+                        {
+                            path.ForEach(p => { Debug.WriteLine(p); });
+                            path.Clear();
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private void CheckAndShuffleTable()
+        {
+            while (!HasValidMove())
+            {
+                MessageBox.Show("Không còn nước đi, shuffle lại bàn chơi!");
+                ShuffleTable();
+            } 
+        }
+
+        private bool IsPathClear(PictureBox pb1, PictureBox pb2)
+        {
+            int x1 = (pb1.Left - 50) / 40;  
+            int y1 = (pb1.Top - 50) / 50;
+            int x2 = (pb2.Left - 50) / 40;
+            int y2 = (pb2.Top - 50) / 50;
+
+
+            return (IsShortestPath(grid, new Point(x1, y1), new Point(x2, y2)));
         }
     }
 }
