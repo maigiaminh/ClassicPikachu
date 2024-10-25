@@ -77,6 +77,7 @@ namespace ClassicPikachu
             lblTags = new Label[gameModel.Height * gameModel.Width];
 
             for (int i = 0; i < gameModel.Height; i++)
+            {
                 for (int j = 0; j < gameModel.Width; j++)
                 {
                     int idx = i * gameModel.Width + j;
@@ -123,7 +124,7 @@ namespace ClassicPikachu
                         px[idx].Dispose();
                     }
                 }
-
+            }
         }
         public void pictureBoxMouseHoverEventhandle(object sender, EventArgs e)
         {
@@ -387,6 +388,9 @@ namespace ClassicPikachu
 
             foreach (var pb in pictureBoxes)
             {
+                int row = (pb.Top - 50) / 50;  
+                int col = (pb.Left - 50) / 40; 
+
                 if ((int)pb.Tag != 0) 
                 {
 
@@ -403,6 +407,7 @@ namespace ClassicPikachu
                         pb.Visible = true;
                     }
 
+                    grid[col, row] = (int)pb.Tag;
                     index++;
                 }
             }
