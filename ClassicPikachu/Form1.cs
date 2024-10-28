@@ -19,7 +19,7 @@ namespace ClassicPikachu
 
         private int matchCount = 0;
         private bool delay = false;
-        private int timeLeft = 100;
+        private int timeLeft;
 
         private List<PictureBox> pictureBoxes = new List<PictureBox>();
         private List<Point> path = new List<Point>();
@@ -33,7 +33,16 @@ namespace ClassicPikachu
 
         private AudioManager audioManager;
 
+        private int level;
+        private int tableWidth;
+        private int tableHeight;
+        private int cellWidth = 50;
+        private int cellHeight = 70;
+        private int offsetWidth;
+        private int offsetHeight;
 
+        private bool isPause = false;
+        private bool isPlaying = false;
 
         private void LoadImages()
         {
@@ -83,8 +92,7 @@ namespace ClassicPikachu
             LoadImages();
 
             audioManager = new AudioManager();
-            audioManager.StartBackgroundMusic(1);
-
+            audioManager.StartBackgroundMusic(0.5f);
             /*
             clearPathTimer.Interval = 500;
             clearPathTimer.Tick += ClearPathTimer_Tick;
@@ -162,6 +170,182 @@ namespace ClassicPikachu
       
             }*/
         }
+
+        private void StartGame(int level)
+        {
+            clearPathTimer.Interval = 500;
+            clearPathTimer.Tick += ClearPathTimer_Tick;
+
+            checkMoveTimer.Interval = 800;
+            checkMoveTimer.Tick += CheckMoveTimer_Tick;
+
+            delayPressTimer.Interval = 1000;
+            delayPressTimer.Tick += DelayPressTimer_Tick;
+
+            countdownTimer.Interval = 1000;
+            countdownTimer.Tick += CountdownTimer_Tick;
+            countdownTimer.Start();
+
+            isPlaying = true;
+            isPause = false;
+
+            if (px != null && px.Length > 0)
+            {
+                foreach (PictureBox p in px)
+                {
+                    if (p == null) { continue; }
+                    p.Dispose();
+                }
+            }
+
+            pictureBoxes.Clear();
+
+            switch (level)
+            {
+                case 0:
+                    tableHeight = 7;
+                    tableWidth = 14;
+                    gameModel = new GameModel(tableWidth, tableHeight, 36);
+                    grid = new int[gameModel.Width, gameModel.Height];
+
+                    ResetTable(ref grid);
+
+                    px = new PictureBox[gameModel.Height * gameModel.Width];
+                    lblTags = new Label[gameModel.Height * gameModel.Width];
+
+                    progressPlayTime.Maximum = 100;
+                    progressPlayTime.Value = 100;
+                    timeLeft = 100;
+
+                    offsetWidth = 150;
+                    offsetHeight = 100;
+
+                    break;
+
+                case 1:
+                    tableHeight = 7;
+                    tableWidth = 16;
+                    gameModel = new GameModel(tableWidth, tableHeight, 36);
+                    grid = new int[gameModel.Width, gameModel.Height];
+
+                    ResetTable(ref grid);
+
+                    px = new PictureBox[gameModel.Height * gameModel.Width];
+                    lblTags = new Label[gameModel.Height * gameModel.Width];
+
+                    progressPlayTime.Maximum = 150;
+                    progressPlayTime.Value = 150;
+                    timeLeft = 150;
+
+                    offsetWidth = 100;
+                    offsetHeight = 100;
+                    break;
+
+                case 2:
+                    tableHeight = 7;
+                    tableWidth = 18;
+                    gameModel = new GameModel(tableWidth, tableHeight, 36);
+                    grid = new int[gameModel.Width, gameModel.Height];
+
+                    ResetTable(ref grid);
+
+                    px = new PictureBox[gameModel.Height * gameModel.Width];
+                    lblTags = new Label[gameModel.Height * gameModel.Width];
+
+                    progressPlayTime.Maximum = 200;
+                    progressPlayTime.Value = 200;
+                    timeLeft = 200;
+
+                    offsetWidth = 50;
+                    offsetHeight = 100;
+                    break;
+            }
+
+            for (int i = 0; i < gameModel.Height; i++)
+            {
+                for (int j = 0; j < gameModel.Width; j++)
+                {
+                    int idx = i * gameModel.Width + j;
+
+                    int tag = gameModel.GetCell(i, j);
+
+                    grid[j, i] = tag;
+
+                    px[idx] = new PictureBox();
+
+                    px[idx].Width = cellWidth;
+                    px[idx].Height = cellHeight;
+                    px[idx].Top = offsetHeight + i * cellHeight;
+                    px[idx].Left = offsetWidth + j * cellWidth;
+
+                    px[idx].Image = images[tag];
+                    px[idx].Tag = tag;
+                    px[idx].SizeMode = PictureBoxSizeMode.CenterImage;
+                    px[idx].BackColor = Color.Transparent;
+                    px[idx].Cursor = Cursors.Hand;
+
+                    px[idx].BringToFront();
+                    px[idx].Click += new EventHandler(pictureBoxClickEventhandle);
+                    px[idx].MouseHover += new EventHandler(pictureBoxMouseHoverEventhandle);
+                    px[idx].MouseLeave += new EventHandler(pictureBoxMouseLeaveEventhandle);
+
+                    pictureBoxes.Add(px[idx]);
+
+                    /*
+                    lblTags[idx] = new Label();
+                    lblTags[idx].Width = 24;
+                    lblTags[idx].Height = 16;
+                    lblTags[idx].Text = tag.ToString();
+                    lblTags[idx].TextAlign = ContentAlignment.MiddleCenter;
+                    lblTags[idx].BackColor = Color.Transparent;
+                    lblTags[idx].ForeColor = Color.Black;
+                    lblTags[idx].Font = new Font("Arial", 8, FontStyle.Bold);
+                    lblTags[idx].BackColor = Color.Transparent;
+                    lblTags[idx].Location = new Point(px[idx].Left + (px[idx].Width - lblTags[idx].Width) / 2,
+                                                      px[idx].Top + (px[idx].Height - lblTags[idx].Height) / 2);
+                    
+                    this.Controls.Add(lblTags[idx]);
+                    */
+
+                    gamePanel.Controls.Add(px[idx]);
+
+                    if ((int)px[idx].Tag == 0)
+                    {
+                        px[idx].Dispose();
+                    }
+                }
+            }
+
+        }
+
+        private void DisableAllPanel()
+        {
+            menuPanel.Hide();
+            chooseLevelPanel.Hide();
+            gamePanel.Hide();
+            pausePanel.Hide();
+        }
+
+        private void EnablePanel(string panelName)
+        {
+            DisableAllPanel();
+            switch (panelName)
+            {
+                case "menu":
+                    menuPanel.Show();
+                    break;
+                case "choose":
+                    chooseLevelPanel.Show();
+                    break;
+                case "game":
+                    gamePanel.Show();
+                    break;
+                case "pause":
+                    pausePanel.Show();
+                    break;
+            }
+        }
+
         public void pictureBoxMouseHoverEventhandle(object sender, EventArgs e)
         {
             PictureBox pb = sender as PictureBox;
@@ -206,10 +390,10 @@ namespace ClassicPikachu
 
                     firstClicked.Image = images[(int)firstClicked.Tag];
                     secondClicked = pb;
-                    int x1 = (firstClicked.Left - 50) / 40;
-                    int y1 = (firstClicked.Top - 50) / 50;
-                    int x2 = (secondClicked.Left - 50) / 40;
-                    int y2 = (secondClicked.Top - 50) / 50;
+                    int x1 = (firstClicked.Left - offsetWidth) / cellWidth;
+                    int y1 = (firstClicked.Top - offsetHeight) / cellHeight;
+                    int x2 = (secondClicked.Left - offsetWidth) / cellWidth;
+                    int y2 = (secondClicked.Top - offsetHeight) / cellHeight;
                     if (IsShortestPath(grid, new Point(x1, y1), new Point(x2, y2)))
                     {
                         delay = true;
@@ -379,6 +563,7 @@ namespace ClassicPikachu
         {
             path = newPath;
             this.Invalidate();
+            gamePanel.Invalidate();
         }
 
         private void DrawPath(Graphics g)
@@ -389,8 +574,10 @@ namespace ClassicPikachu
             {
                 for (int i = 0; i < path.Count - 1; i++)
                 {
-                    Point point1 = new Point(path[i].X * 40 + 50 + 20, path[i].Y * 50 + 50 + 25);
-                    Point point2 = new Point(path[i + 1].X * 40 + 50 + 20, path[i + 1].Y * 50 + 50 + 25);
+                    Point point1 = new Point(path[i].X * cellWidth + offsetWidth + offsetWidth / 2 - cellWidth,
+                                            path[i].Y * cellHeight + offsetHeight + cellHeight / 2);
+                    Point point2 = new Point(path[i + 1].X * cellWidth + offsetWidth + offsetWidth / 2 - cellWidth,
+                                            path[i + 1].Y * cellHeight + offsetHeight + cellHeight / 2);
                     g.DrawLine(pen, point1, point2);
 
                 }
@@ -423,8 +610,9 @@ namespace ClassicPikachu
         {
             if (timeLeft > 0)
             {
+                if (isPause) { return; }
                 timeLeft--;
-                //progressBar1.Value = timeLeft;
+                progressPlayTime.Value = timeLeft;
             }
             else
             {
@@ -452,8 +640,8 @@ namespace ClassicPikachu
 
             foreach (var pb in pictureBoxes)
             {
-                int row = (pb.Top - 50) / 50;
-                int col = (pb.Left - 50) / 40;
+                int row = (pb.Top - offsetHeight) / cellHeight;
+                int col = (pb.Left - offsetWidth) / cellWidth;
 
                 if ((int)pb.Tag != 0)
                 {
@@ -476,15 +664,6 @@ namespace ClassicPikachu
                 }
             }
 
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            ShuffleTable();
-            while (!HasValidMove())
-            {
-                ShuffleTable();
-            }
         }
 
         private bool HasValidMove()
@@ -528,10 +707,10 @@ namespace ClassicPikachu
 
         private bool IsPathClear(PictureBox pb1, PictureBox pb2)
         {
-            int x1 = (pb1.Left - 50) / 40;
-            int y1 = (pb1.Top - 50) / 50;
-            int x2 = (pb2.Left - 50) / 40;
-            int y2 = (pb2.Top - 50) / 50;
+            int x1 = (pb1.Left - offsetWidth) / cellWidth;
+            int y1 = (pb1.Top - offsetHeight) / cellHeight;
+            int x2 = (pb2.Left - offsetWidth) / cellWidth;
+            int y2 = (pb2.Top - offsetHeight) / cellHeight;
 
             return (IsShortestPath(grid, new Point(x1, y1), new Point(x2, y2)));
         }
@@ -540,7 +719,6 @@ namespace ClassicPikachu
         {
             Application.Exit();
         }
-
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
@@ -552,38 +730,147 @@ namespace ClassicPikachu
 
         private void btnMusic_Click(object sender, EventArgs e)
         {
-            audioManager.PlaySoundEffect("click");
-            isMusicOn = !isMusicOn;
-            if (isMusicOn)
-            {
-                btnMusic.Image = Properties.Resources.music_on;
-                audioManager.MuteBackgroundMusic(false);
-            }
-            else
-            {
-                btnMusic.Image = Properties.Resources.music_off;
-                audioManager.MuteBackgroundMusic(true);
-            }
+            ToggleMusic();
         }
 
         private void btnPlay_Click(object sender, EventArgs e)
         {
             audioManager.PlaySoundEffect("click", 1f);
+            EnablePanel("choose");
         }
 
         private void btnSound_Click(object sender, EventArgs e)
+        {
+            ToggleSound();
+        }
+
+        private void ToggleSound()
         {
             audioManager.PlaySoundEffect("click");
             isSoundOn = !isSoundOn;
             if (isSoundOn)
             {
                 btnSound.Image = Properties.Resources.sound_on;
+                btnSoundPause.Image = Properties.Resources.sound_on;
                 audioManager.MuteSoundEffects(false);
             }
             else
             {
                 btnSound.Image = Properties.Resources.sound_off;
+                btnSoundPause.Image = Properties.Resources.sound_off;
                 audioManager.MuteSoundEffects(true);
+            }
+        }
+
+        private void ToggleMusic()
+        {
+            audioManager.PlaySoundEffect("click");
+            isMusicOn = !isMusicOn;
+            if (isMusicOn)
+            {
+                btnMusic.Image = Properties.Resources.music_on;
+                btnMusicPaused.Image = Properties.Resources.music_on;
+                audioManager.MuteBackgroundMusic(false);
+            }
+            else
+            {
+                btnMusic.Image = Properties.Resources.music_off;
+                btnMusicPaused.Image = Properties.Resources.music_off;
+                audioManager.MuteBackgroundMusic(true);
+            }
+        }
+
+        private void btnBackToMenu_Click(object sender, EventArgs e)
+        {
+            EnablePanel("menu");
+            audioManager.PlaySoundEffect("click", 1f);
+        }
+
+        private void btnEasy_Click(object sender, EventArgs e)
+        {
+            EnablePanel("game");
+            audioManager.PlaySoundEffect("click", 1f);
+            level = 0;
+            StartGame(level);
+        }
+
+        private void btnMenu_Click(object sender, EventArgs e)
+        {
+            EnablePanel("menu");
+            audioManager.PlaySoundEffect("click", 1f);
+        }
+
+        private void btnResume_Click(object sender, EventArgs e)
+        {
+            EnablePanel("game");
+            audioManager.PlaySoundEffect("click", 1f);
+        }
+
+        private void btnSoundPause_Click(object sender, EventArgs e)
+        {
+            ToggleSound();
+        }
+
+        private void btnMusicPaused_Click(object sender, EventArgs e)
+        {
+            ToggleMusic();
+        }
+
+        private void btnQuitPaused_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
+        }
+
+        private void pictureBox10_Click(object sender, EventArgs e)
+        {
+            audioManager.PlaySoundEffect("click", 1f);
+            EnablePanel("choose");
+        }
+
+        private void btnPause_Click(object sender, EventArgs e)
+        {
+            audioManager.PlaySoundEffect("click", 1f);
+            EnablePanel("pause");
+        }
+
+        private void btnShuffle_Click(object sender, EventArgs e)
+        {
+            ShuffleTable();
+            while (!HasValidMove())
+            {
+                ShuffleTable();
+            }
+        }
+
+        private void gamePanel_Paint(object sender, PaintEventArgs e)
+        {
+            DrawPath(e.Graphics);
+        }
+
+        private void btnMedium_Click(object sender, EventArgs e)
+        {
+            EnablePanel("game");
+            audioManager.PlaySoundEffect("click", 1f);
+            level = 1;
+            StartGame(level);
+        }
+
+        private void btnHard_Click(object sender, EventArgs e)
+        {
+            EnablePanel("game");
+            audioManager.PlaySoundEffect("click", 1f);
+            level = 2;
+            StartGame(level);
+        }
+
+        private void ResetTable(ref int[,] grid)
+        {
+            for(int i = 0; i < grid.GetLength(0); i++)
+            {
+                for (int j = 0; j < grid.GetLength(1); j++)
+                {
+                    grid[i, j] = 0;
+                }
             }
         }
     }
