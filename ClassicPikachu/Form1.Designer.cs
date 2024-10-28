@@ -241,7 +241,7 @@
             lblLevel.AutoSize = true;
             lblLevel.Font = new Font("Minecraft", 16.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
             lblLevel.ForeColor = Color.FromArgb(240, 181, 65);
-            lblLevel.Location = new Point(250, 20);
+            lblLevel.Location = new Point(20, 70);
             lblLevel.Name = "lblLevel";
             lblLevel.Size = new Size(145, 28);
             lblLevel.TabIndex = 9;
@@ -250,9 +250,9 @@
             // 
             // progressPlayTime
             // 
-            progressPlayTime.Location = new Point(425, 20);
+            progressPlayTime.Location = new Point(250, 20);
             progressPlayTime.Name = "progressPlayTime";
-            progressPlayTime.Size = new Size(381, 29);
+            progressPlayTime.Size = new Size(500, 29);
             progressPlayTime.TabIndex = 8;
             // 
             // lblScore
@@ -260,7 +260,7 @@
             lblScore.AutoSize = true;
             lblScore.Font = new Font("Minecraft", 16.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
             lblScore.ForeColor = Color.FromArgb(240, 181, 65);
-            lblScore.Location = new Point(20, 20);
+            lblScore.Location = new Point(20, 21);
             lblScore.Name = "lblScore";
             lblScore.Size = new Size(156, 28);
             lblScore.TabIndex = 7;
@@ -467,8 +467,8 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1000, 600);
             Controls.Add(menuPanel);
-            Controls.Add(chooseLevelPanel);
             Controls.Add(gamePanel);
+            Controls.Add(chooseLevelPanel);
             Controls.Add(pausePanel);
             FormBorderStyle = FormBorderStyle.Fixed3D;
             MaximizeBox = false;

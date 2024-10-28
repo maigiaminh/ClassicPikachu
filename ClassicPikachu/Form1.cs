@@ -17,7 +17,6 @@ namespace ClassicPikachu
         private Label[] lblTags;
         private GameModel gameModel;
 
-        private int matchCount = 0;
         private bool delay = false;
         private int timeLeft;
 
@@ -43,6 +42,10 @@ namespace ClassicPikachu
 
         private bool isPause = false;
         private bool isPlaying = false;
+
+        private int score;
+        private int matchCount = 0;
+        private int totalCell;
 
         private void LoadImages()
         {
@@ -92,7 +95,7 @@ namespace ClassicPikachu
             LoadImages();
 
             audioManager = new AudioManager();
-            audioManager.StartBackgroundMusic(0.5f);
+            audioManager.StartBackgroundMusic(0.3f);
             /*
             clearPathTimer.Interval = 500;
             clearPathTimer.Tick += ClearPathTimer_Tick;
@@ -220,6 +223,7 @@ namespace ClassicPikachu
                     offsetWidth = 150;
                     offsetHeight = 100;
 
+                    totalCell = 60;
                     break;
 
                 case 1:
@@ -233,12 +237,14 @@ namespace ClassicPikachu
                     px = new PictureBox[gameModel.Height * gameModel.Width];
                     lblTags = new Label[gameModel.Height * gameModel.Width];
 
-                    progressPlayTime.Maximum = 150;
-                    progressPlayTime.Value = 150;
-                    timeLeft = 150;
+                    progressPlayTime.Maximum = 100;
+                    progressPlayTime.Value = 100;
+                    timeLeft = 100;
 
                     offsetWidth = 100;
                     offsetHeight = 100;
+
+                    totalCell = 70;
                     break;
 
                 case 2:
@@ -252,12 +258,14 @@ namespace ClassicPikachu
                     px = new PictureBox[gameModel.Height * gameModel.Width];
                     lblTags = new Label[gameModel.Height * gameModel.Width];
 
-                    progressPlayTime.Maximum = 200;
-                    progressPlayTime.Value = 200;
-                    timeLeft = 200;
+                    progressPlayTime.Maximum = 100;
+                    progressPlayTime.Value = 100;
+                    timeLeft = 100;
 
                     offsetWidth = 50;
                     offsetHeight = 100;
+
+                    totalCell = 80;
                     break;
             }
 
@@ -384,6 +392,7 @@ namespace ClassicPikachu
                     {
                         firstClicked.Image = images[(int)firstClicked.Tag];
                         firstClicked = null;
+                        audioManager.PlaySoundEffect("oho");
                         return;
                     }
 
@@ -414,10 +423,23 @@ namespace ClassicPikachu
                         clearPathTimer.Start();
                         checkMoveTimer.Start();
                         delayPressTimer.Start();
+
+                        audioManager.PlaySoundEffect("hit");
+
+                        score += (level == 0) ? 3 : (level == 1) ? 5 : 10;
+                        lblScore.Text = "SCORE: " + score.ToString();
+
+                        matchCount ++;
+                        
+                        if(matchCount >= totalCell)
+                        {
+                            isPlaying = false;
+                            isPause = true;
+                        }
                     }
                     else
                     {
-
+                        audioManager.PlaySoundEffect("oho");
                     }
                     firstClicked = null;
                     secondClicked = null;
@@ -608,7 +630,7 @@ namespace ClassicPikachu
 
         private void CountdownTimer_Tick(object sender, EventArgs e)
         {
-            if (timeLeft > 0)
+            if (timeLeft > 0 && isPlaying)
             {
                 if (isPause) { return; }
                 timeLeft--;
@@ -616,6 +638,7 @@ namespace ClassicPikachu
             }
             else
             {
+                isPlaying = false;
                 countdownTimer.Stop();
                 MessageBox.Show("Hết thời gian!");
             }
@@ -623,6 +646,8 @@ namespace ClassicPikachu
 
         private void ShuffleTable()
         {
+            audioManager.PlaySoundEffect("shuffle");
+
             Random random = new Random();
 
             var tags = pictureBoxes.Where(pb => (int)pb.Tag != 0).Select(pb => pb.Tag).ToList();
@@ -791,6 +816,7 @@ namespace ClassicPikachu
             EnablePanel("game");
             audioManager.PlaySoundEffect("click", 1f);
             level = 0;
+            lblLevel.Text = "LEVEL: EASY";
             StartGame(level);
         }
 
@@ -803,6 +829,7 @@ namespace ClassicPikachu
         private void btnResume_Click(object sender, EventArgs e)
         {
             EnablePanel("game");
+            isPause = false;
             audioManager.PlaySoundEffect("click", 1f);
         }
 
@@ -830,6 +857,7 @@ namespace ClassicPikachu
         private void btnPause_Click(object sender, EventArgs e)
         {
             audioManager.PlaySoundEffect("click", 1f);
+            isPause = true;
             EnablePanel("pause");
         }
 
@@ -852,6 +880,7 @@ namespace ClassicPikachu
             EnablePanel("game");
             audioManager.PlaySoundEffect("click", 1f);
             level = 1;
+            lblLevel.Text = "LEVEL: MEDIUM";
             StartGame(level);
         }
 
@@ -860,6 +889,7 @@ namespace ClassicPikachu
             EnablePanel("game");
             audioManager.PlaySoundEffect("click", 1f);
             level = 2;
+            lblLevel.Text = "LEVEL: HARD";
             StartGame(level);
         }
 

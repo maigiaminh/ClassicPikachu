@@ -24,6 +24,10 @@ namespace ClassicPikachu
             soundEffects = new Dictionary<string, string>()
             {
                 { "click", @"Resources\click.mp3" },
+                { "oho", @"Resources\oho.mp3" },
+                { "shuffle", @"Resources\shuffle.mp3" },
+                { "hit", @"Resources\hit.mp3" },
+
             };
             LoadSoundEffect();
         }
@@ -77,7 +81,7 @@ namespace ClassicPikachu
             isBackgroundMuted = mute;
             if (backgroundMusic != null)
             {
-                backgroundMusic.Volume = mute ? 0 : 0.5f;
+                backgroundMusic.Volume = mute ? 0 : 0.3f;
             }
         }
 
