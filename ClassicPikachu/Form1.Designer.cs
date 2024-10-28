@@ -111,7 +111,6 @@
             // btnContinue
             // 
             btnContinue.Cursor = Cursors.Hand;
-            btnContinue.Enabled = false;
             btnContinue.Image = Properties.Resources.cont;
             btnContinue.Location = new Point(425, 200);
             btnContinue.Name = "btnContinue";
@@ -119,6 +118,7 @@
             btnContinue.SizeMode = PictureBoxSizeMode.Zoom;
             btnContinue.TabIndex = 2;
             btnContinue.TabStop = false;
+            btnContinue.Click += btnContinue_Click;
             // 
             // btnPlay
             // 
@@ -475,6 +475,7 @@
             Name = "Form1";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Form1";
+            FormClosing += Form1_FormClosing;
             FormClosed += Form1_FormClosed;
             Paint += Form1_Paint;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();

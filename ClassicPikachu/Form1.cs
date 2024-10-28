@@ -1,7 +1,8 @@
-﻿using NAudio.Wave;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Drawing.Imaging;
-using System.Media;
+using System.Numerics;
+using System.Text.Json;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 
 namespace ClassicPikachu
 {
@@ -108,82 +109,8 @@ namespace ClassicPikachu
 
             countdownTimer.Interval = 1000;
             countdownTimer.Tick += CountdownTimer_Tick;
-            /*
-            clearPathTimer.Interval = 500;
-            clearPathTimer.Tick += ClearPathTimer_Tick;
 
-            checkMoveTimer.Interval = 800;
-            checkMoveTimer.Tick += CheckMoveTimer_Tick;
-
-            delayPressTimer.Interval = 1000;
-            delayPressTimer.Tick += DelayPressTimer_Tick;
-
-            countdownTimer.Interval = 1000;
-            countdownTimer.Tick += CountdownTimer_Tick;
-            countdownTimer.Start();
-
-            gameModel = new GameModel(12, 9, 36);
-            grid = new int[gameModel.Width, gameModel.Height];
-
-            px = new PictureBox[gameModel.Height * gameModel.Width];
-            lblTags = new Label[gameModel.Height * gameModel.Width];
-
-            progressBar1.Maximum = 100;
-            progressBar1.Value = timeLeft;
-            
-            for (int i = 0; i < gameModel.Height; i++)
-            {
-                for (int j = 0; j < gameModel.Width; j++)
-                {
-                    int idx = i * gameModel.Width + j;
-
-                    int tag = gameModel.GetCell(i, j);
-
-                    grid[j, i] = tag;
-
-                    px[idx] = new PictureBox();
-
-                    px[idx].Width = 40;
-                    px[idx].Height = 50;
-                    px[idx].Top = 50 + i * 50;
-                    px[idx].Left = 50 + j * 40;
-
-                    px[idx].Image = images[tag];
-                    px[idx].Tag = tag;
-                    px[idx].SizeMode = PictureBoxSizeMode.CenterImage;
-                    px[idx].BackColor = Color.Transparent;
-                    px[idx].Cursor = Cursors.Hand;
-
-                    px[idx].Click += new EventHandler(pictureBoxClickEventhandle);
-                    px[idx].MouseHover += new EventHandler(pictureBoxMouseHoverEventhandle);
-                    px[idx].MouseLeave += new EventHandler(pictureBoxMouseLeaveEventhandle);
-
-                    pictureBoxes.Add(px[idx]);
-
-                    
-                    lblTags[idx] = new Label();
-                    lblTags[idx].Width = 24;
-                    lblTags[idx].Height = 16;
-                    lblTags[idx].Text = tag.ToString();
-                    lblTags[idx].TextAlign = ContentAlignment.MiddleCenter;
-                    lblTags[idx].BackColor = Color.Transparent;
-                    lblTags[idx].ForeColor = Color.Black;
-                    lblTags[idx].Font = new Font("Arial", 8, FontStyle.Bold);
-                    lblTags[idx].BackColor = Color.Transparent;
-                    lblTags[idx].Location = new Point(px[idx].Left + (px[idx].Width - lblTags[idx].Width) / 2,
-                                                      px[idx].Top + (px[idx].Height - lblTags[idx].Height) / 2);
-                    this.Controls.Add(lblTags[idx]);
-
-                    
-                    this.Controls.Add(px[idx]);
-
-                    if ((int)px[idx].Tag == 0)
-                    {
-                        px[idx].Dispose();
-                    }
-                }
-      
-            }*/
+            EnablePanel("menu");
         }
 
         private void StartGame(int level, bool isNewGame = false)
@@ -194,6 +121,11 @@ namespace ClassicPikachu
             {
                 score = 0;
                 lblScore.Text = "SCORE: 0";
+                string filePath = Path.Combine(Application.StartupPath, "Resources", "savedgame.json");
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
             }
 
             countdownTimer.Start();
@@ -350,6 +282,17 @@ namespace ClassicPikachu
             {
                 case "menu":
                     menuPanel.Show();
+                    string filePath = Path.Combine(Application.StartupPath, "Resources", "savedgame.json");
+                    if (File.Exists(filePath))
+                    {
+                        btnContinue.Image = Properties.Resources.cont;
+                        btnContinue.Enabled = true;
+                    }
+                    else
+                    {
+                        btnContinue.Image = Properties.Resources.cont_disable;
+                        btnContinue.Enabled = false;
+                    }
                     break;
                 case "choose":
                     chooseLevelPanel.Show();
@@ -438,9 +381,9 @@ namespace ClassicPikachu
                         score += (level == 0) ? 3 : (level == 1) ? 5 : 10;
                         lblScore.Text = "SCORE: " + score.ToString();
 
-                        matchCount ++;
-                        
-                        if(matchCount >= totalCell)
+                        matchCount++;
+
+                        if (matchCount >= totalCell)
                         {
                             isPlaying = false;
                             isPause = true;
@@ -449,13 +392,23 @@ namespace ClassicPikachu
 
                             DialogResult dialogResult = MessageBox.Show("You have clear this table. Do you want to continue?", "CONGRATULATION", MessageBoxButtons.YesNo);
 
-                            if(dialogResult == DialogResult.Yes)
+                            if (dialogResult == DialogResult.Yes)
                             {
                                 StartGame(level);
                             }
                             else if (dialogResult == DialogResult.No)
                             {
                                 EnablePanel("menu");
+                                GameData currentGameData = new GameData
+                                {
+                                    Grid = ConvertGridToList(grid),
+                                    Level = level,
+                                    MatchCount = matchCount,
+                                    Score = score,
+                                    Time = timeLeft
+                                };
+                                SaveGame(currentGameData, @"Resources\savedgame.json");
+                                SaveGame(currentGameData, @"Resources\savedgame.json");
                             }
                         }
                     }
@@ -668,6 +621,11 @@ namespace ClassicPikachu
                 if (dialogResult == DialogResult.OK)
                 {
                     EnablePanel("menu");
+                    string filePath = Path.Combine(Application.StartupPath, "Resources", "savedgame.json");
+                    if (File.Exists(filePath))
+                    {
+                        File.Delete(filePath);
+                    }
                 }
             }
         }
@@ -751,7 +709,7 @@ namespace ClassicPikachu
 
         private void CheckAndShuffleTable()
         {
-            
+
             while (!HasValidMove())
             {
                 MessageBox.Show("Không còn nước đi, shuffle lại bàn chơi!");
@@ -838,6 +796,15 @@ namespace ClassicPikachu
         {
             EnablePanel("menu");
             audioManager.PlaySoundEffect("click", 1f);
+            GameData currentGameData = new GameData
+            {
+                Grid = ConvertGridToList(grid),
+                Level = level,
+                MatchCount = matchCount,
+                Score = score,
+                Time = timeLeft
+            };
+            SaveGame(currentGameData, @"Resources\savedgame.json");
         }
 
         private void btnMenu_Click(object sender, EventArgs e)
@@ -924,7 +891,7 @@ namespace ClassicPikachu
 
         private void ResetTable(ref int[,] grid)
         {
-            for(int i = 0; i < grid.GetLength(0); i++)
+            for (int i = 0; i < grid.GetLength(0); i++)
             {
                 for (int j = 0; j < grid.GetLength(1); j++)
                 {
@@ -932,5 +899,153 @@ namespace ClassicPikachu
                 }
             }
         }
+
+        public void SaveGame(GameData gameData, string filePath)
+        {
+            gameData.Grid = ConvertGridToList(grid);
+
+            var jsonString = JsonSerializer.Serialize(gameData);
+
+            File.WriteAllText(filePath, jsonString);
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if(isPlaying)
+            {
+                GameData currentGameData = new GameData
+                {
+                    Grid = ConvertGridToList(grid),
+                    Level = level,
+                    MatchCount = matchCount,
+                    Score = score,
+                    Time = timeLeft
+                };
+                SaveGame(currentGameData, @"Resources\savedgame.json");
+            }
+        }
+        private List<List<int>> ConvertGridToList(int[,] grid)
+        {
+            var list = new List<List<int>>();
+            for (int i = 0; i < grid.GetLength(0); i++)
+            {
+                var row = new List<int>();
+                for (int j = 0; j < grid.GetLength(1); j++)
+                {
+                    row.Add(grid[i, j]);
+                }
+                list.Add(row);
+            }
+            return list;
+        }
+
+        private int[,] ConvertListToGrid(List<List<int>> list)
+        {
+            int rows = list.Count;
+            int cols = list[0].Count;
+            int[,] grid = new int[rows, cols];
+
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < cols; j++)
+                {
+                    grid[i, j] = list[i][j];
+                }
+            }
+            return grid;
+        }
+
+        private void btnContinue_Click(object sender, EventArgs e)
+        {
+            string filePath = Path.Combine(Application.StartupPath, "Resources", "savedgame.json");
+            GameData loadedData = LoadGame(filePath);
+
+            if (loadedData != null)
+            {
+                RestoreGame(loadedData);
+            }
+
+
+        }
+        public GameData LoadGame(string filePath)
+        {
+            if (!File.Exists(filePath))
+            {
+                Debug.WriteLine("File save not found!");
+                return null;
+            }
+
+            var jsonString = File.ReadAllText(filePath);
+            return JsonSerializer.Deserialize<GameData>(jsonString);
+        }
+
+        public void RestoreGame(GameData gameData)
+        {
+            if (gameData == null) return;
+
+            grid = ConvertListToGrid(gameData.Grid);
+
+            pictureBoxes.Clear();
+
+            px = new PictureBox[grid.GetLength(0) * grid.GetLength(1)];
+            matchCount = gameData.MatchCount;
+            score = gameData.Score;
+            timeLeft = gameData.Time;
+            level = gameData.Level;
+
+            lblScore.Text = "SCORE: " + score;
+            string levelStr = (level == 0) ? "EASY" : level == 1 ? "MEDIUM" : "HARD";
+            lblLevel.Text = "LEVEL: " + levelStr;
+
+            EnablePanel("game");
+            isPlaying = true;
+            isPause = false;
+
+            progressPlayTime.Value = timeLeft;
+            progressPlayTime.Maximum = 100;
+            countdownTimer.Start();
+
+            offsetHeight = 100;
+            offsetWidth = level == 0 ? 150 : level == 1 ? 100 : 50;
+            totalCell = level == 0 ? 30 : level == 1 ? 35 : 40;
+
+            for (int i = 0; i < grid.GetLength(1); i++)
+            {
+                for (int j = 0; j < grid.GetLength(0); j++)
+                {
+                    int idx = i * grid.GetLength(0) + j;
+
+                    int tag = grid[j, i];
+
+                    px[idx] = new PictureBox();
+
+                    px[idx].Width = cellWidth;
+                    px[idx].Height = cellHeight;
+                    px[idx].Top = offsetHeight + i * cellHeight;
+                    px[idx].Left = offsetWidth + j * cellWidth;
+
+                    if(tag != -1 && tag != 0) px[idx].Image = images[tag];
+                    px[idx].Tag = tag;
+                    px[idx].SizeMode = PictureBoxSizeMode.CenterImage;
+                    px[idx].BackColor = Color.Transparent;
+                    px[idx].Cursor = Cursors.Hand;
+
+                    px[idx].BringToFront();
+                    px[idx].Click += new EventHandler(pictureBoxClickEventhandle);
+                    px[idx].MouseHover += new EventHandler(pictureBoxMouseHoverEventhandle);
+                    px[idx].MouseLeave += new EventHandler(pictureBoxMouseLeaveEventhandle);
+
+                    pictureBoxes.Add(px[idx]);
+
+                    gamePanel.Controls.Add(px[idx]);
+
+                    if ((int)px[idx].Tag == 0)
+                    {
+                        px[idx].Dispose();
+                    }
+                }
+            }
+        }
+
     }
 }
