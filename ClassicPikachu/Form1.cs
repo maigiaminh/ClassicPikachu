@@ -47,7 +47,7 @@ namespace ClassicPikachu
         private int score;
         private int matchCount = 0;
         private int totalCell;
-
+        private int highscore;
         private void LoadImages()
         {
             images = new Image[36];
@@ -109,6 +109,8 @@ namespace ClassicPikachu
 
             countdownTimer.Interval = 1000;
             countdownTimer.Tick += CountdownTimer_Tick;
+
+            highscore = LoadHighScore();
 
             EnablePanel("menu");
         }
@@ -283,6 +285,7 @@ namespace ClassicPikachu
                 case "menu":
                     menuPanel.Show();
                     string filePath = Path.Combine(Application.StartupPath, "Resources", "savedgame.json");
+                    lblHighScore.Text = $"HIGHSCORE: {highscore}";
                     if (File.Exists(filePath))
                     {
                         btnContinue.Image = Properties.Resources.cont;
@@ -390,8 +393,14 @@ namespace ClassicPikachu
                             countdownTimer.Stop();
                             checkMoveTimer.Stop();
 
-                            DialogResult dialogResult = MessageBox.Show("You have clear this table. Do you want to continue?", "CONGRATULATION", MessageBoxButtons.YesNo);
+                            if (score > highscore)
+                            {
+                                highscore = score;
+                                SaveHighScore(score);
+                            }
 
+                            DialogResult dialogResult = MessageBox.Show("You have clear this table. Do you want to continue?", "CONGRATULATION", MessageBoxButtons.YesNo);
+                            
                             if (dialogResult == DialogResult.Yes)
                             {
                                 StartGame(level);
@@ -616,8 +625,17 @@ namespace ClassicPikachu
             {
                 isPlaying = false;
                 countdownTimer.Stop();
-                DialogResult dialogResult = MessageBox.Show($"You scored {score}", "YOU LOST", MessageBoxButtons.OK);
-
+                DialogResult dialogResult;
+                if (score > highscore)
+                {
+                    highscore = score;
+                    SaveHighScore(score);
+                    dialogResult = MessageBox.Show($"You got the highest score: {score}", "YOU LOST", MessageBoxButtons.OK);
+                }
+                else
+                {
+                    dialogResult = MessageBox.Show($"You scored: {score}", "YOU LOST", MessageBoxButtons.OK);
+                }
                 if (dialogResult == DialogResult.OK)
                 {
                     EnablePanel("menu");
@@ -809,8 +827,25 @@ namespace ClassicPikachu
 
         private void btnMenu_Click(object sender, EventArgs e)
         {
-            EnablePanel("menu");
             audioManager.PlaySoundEffect("click", 1f);
+            if (score > highscore)
+            {
+                highscore = score;
+                SaveHighScore(score);
+            }
+
+            GameData currentGameData = new GameData
+            {
+                Grid = ConvertGridToList(grid),
+                Level = level,
+                MatchCount = matchCount,
+                Score = score,
+                Time = timeLeft
+            };
+            SaveGame(currentGameData, @"Resources\savedgame.json");
+
+            EnablePanel("menu");
+
         }
 
         private void btnResume_Click(object sender, EventArgs e)
@@ -913,6 +948,12 @@ namespace ClassicPikachu
         {
             if(isPlaying)
             {
+                if (score > highscore)
+                {
+                    highscore = score;
+                    SaveHighScore(score);
+                }
+
                 GameData currentGameData = new GameData
                 {
                     Grid = ConvertGridToList(grid),
@@ -1046,6 +1087,15 @@ namespace ClassicPikachu
                 }
             }
         }
+        public void SaveHighScore(int highScore)
+        {
+            Properties.Settings.Default.HighScore = highScore;
+            Properties.Settings.Default.Save();
+        }
 
+        public int LoadHighScore()
+        {
+            return Properties.Settings.Default.HighScore;
+        }
     }
 }
