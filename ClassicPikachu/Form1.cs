@@ -96,6 +96,18 @@ namespace ClassicPikachu
 
             audioManager = new AudioManager();
             audioManager.StartBackgroundMusic(0.3f);
+
+            clearPathTimer.Interval = 500;
+            clearPathTimer.Tick += ClearPathTimer_Tick;
+
+            checkMoveTimer.Interval = 800;
+            checkMoveTimer.Tick += CheckMoveTimer_Tick;
+
+            delayPressTimer.Interval = 1000;
+            delayPressTimer.Tick += DelayPressTimer_Tick;
+
+            countdownTimer.Interval = 1000;
+            countdownTimer.Tick += CountdownTimer_Tick;
             /*
             clearPathTimer.Interval = 500;
             clearPathTimer.Tick += ClearPathTimer_Tick;
@@ -174,19 +186,16 @@ namespace ClassicPikachu
             }*/
         }
 
-        private void StartGame(int level)
+        private void StartGame(int level, bool isNewGame = false)
         {
-            clearPathTimer.Interval = 500;
-            clearPathTimer.Tick += ClearPathTimer_Tick;
+            matchCount = 0;
 
-            checkMoveTimer.Interval = 800;
-            checkMoveTimer.Tick += CheckMoveTimer_Tick;
+            if (isNewGame)
+            {
+                score = 0;
+                lblScore.Text = "SCORE: 0";
+            }
 
-            delayPressTimer.Interval = 1000;
-            delayPressTimer.Tick += DelayPressTimer_Tick;
-
-            countdownTimer.Interval = 1000;
-            countdownTimer.Tick += CountdownTimer_Tick;
             countdownTimer.Start();
 
             isPlaying = true;
@@ -223,7 +232,7 @@ namespace ClassicPikachu
                     offsetWidth = 150;
                     offsetHeight = 100;
 
-                    totalCell = 60;
+                    totalCell = 30;
                     break;
 
                 case 1:
@@ -244,7 +253,7 @@ namespace ClassicPikachu
                     offsetWidth = 100;
                     offsetHeight = 100;
 
-                    totalCell = 70;
+                    totalCell = 35;
                     break;
 
                 case 2:
@@ -265,7 +274,7 @@ namespace ClassicPikachu
                     offsetWidth = 50;
                     offsetHeight = 100;
 
-                    totalCell = 80;
+                    totalCell = 40;
                     break;
             }
 
@@ -300,19 +309,19 @@ namespace ClassicPikachu
                     pictureBoxes.Add(px[idx]);
 
                     /*
-                    lblTags[idx] = new Label();
-                    lblTags[idx].Width = 24;
-                    lblTags[idx].Height = 16;
-                    lblTags[idx].Text = tag.ToString();
-                    lblTags[idx].TextAlign = ContentAlignment.MiddleCenter;
-                    lblTags[idx].BackColor = Color.Transparent;
-                    lblTags[idx].ForeColor = Color.Black;
-                    lblTags[idx].Font = new Font("Arial", 8, FontStyle.Bold);
-                    lblTags[idx].BackColor = Color.Transparent;
-                    lblTags[idx].Location = new Point(px[idx].Left + (px[idx].Width - lblTags[idx].Width) / 2,
-                                                      px[idx].Top + (px[idx].Height - lblTags[idx].Height) / 2);
+                        lblTags[idx] = new Label();
+                        lblTags[idx].Width = 24;
+                        lblTags[idx].Height = 16;
+                        lblTags[idx].Text = tag.ToString();
+                        lblTags[idx].TextAlign = ContentAlignment.MiddleCenter;
+                        lblTags[idx].BackColor = Color.Transparent;
+                        lblTags[idx].ForeColor = Color.Black;
+                        lblTags[idx].Font = new Font("Arial", 8, FontStyle.Bold);
+                        lblTags[idx].BackColor = Color.Transparent;
+                        lblTags[idx].Location = new Point(px[idx].Left + (px[idx].Width - lblTags[idx].Width) / 2,
+                                                          px[idx].Top + (px[idx].Height - lblTags[idx].Height) / 2);
                     
-                    this.Controls.Add(lblTags[idx]);
+                        this.Controls.Add(lblTags[idx]);
                     */
 
                     gamePanel.Controls.Add(px[idx]);
@@ -435,6 +444,19 @@ namespace ClassicPikachu
                         {
                             isPlaying = false;
                             isPause = true;
+                            countdownTimer.Stop();
+                            checkMoveTimer.Stop();
+
+                            DialogResult dialogResult = MessageBox.Show("You have clear this table. Do you want to continue?", "CONGRATULATION", MessageBoxButtons.YesNo);
+
+                            if(dialogResult == DialogResult.Yes)
+                            {
+                                StartGame(level);
+                            }
+                            else if (dialogResult == DialogResult.No)
+                            {
+                                EnablePanel("menu");
+                            }
                         }
                     }
                     else
@@ -592,13 +614,14 @@ namespace ClassicPikachu
         {
             if (path.Count < 2) return;
 
+            int offset = level == 0 ? cellWidth : level == 1 ? cellWidth / 2 : 0;
             using (Pen pen = new Pen(Color.FromArgb(0, 255, 66), 5))
             {
                 for (int i = 0; i < path.Count - 1; i++)
                 {
-                    Point point1 = new Point(path[i].X * cellWidth + offsetWidth + offsetWidth / 2 - cellWidth,
+                    Point point1 = new Point(path[i].X * cellWidth + offsetWidth + offsetWidth / 2 - offset,
                                             path[i].Y * cellHeight + offsetHeight + cellHeight / 2);
-                    Point point2 = new Point(path[i + 1].X * cellWidth + offsetWidth + offsetWidth / 2 - cellWidth,
+                    Point point2 = new Point(path[i + 1].X * cellWidth + offsetWidth + offsetWidth / 2 - offset,
                                             path[i + 1].Y * cellHeight + offsetHeight + cellHeight / 2);
                     g.DrawLine(pen, point1, point2);
 
@@ -640,7 +663,12 @@ namespace ClassicPikachu
             {
                 isPlaying = false;
                 countdownTimer.Stop();
-                MessageBox.Show("Hết thời gian!");
+                DialogResult dialogResult = MessageBox.Show($"You scored {score}", "YOU LOST", MessageBoxButtons.OK);
+
+                if (dialogResult == DialogResult.OK)
+                {
+                    EnablePanel("menu");
+                }
             }
         }
 
@@ -723,6 +751,7 @@ namespace ClassicPikachu
 
         private void CheckAndShuffleTable()
         {
+            
             while (!HasValidMove())
             {
                 MessageBox.Show("Không còn nước đi, shuffle lại bàn chơi!");
@@ -811,15 +840,6 @@ namespace ClassicPikachu
             audioManager.PlaySoundEffect("click", 1f);
         }
 
-        private void btnEasy_Click(object sender, EventArgs e)
-        {
-            EnablePanel("game");
-            audioManager.PlaySoundEffect("click", 1f);
-            level = 0;
-            lblLevel.Text = "LEVEL: EASY";
-            StartGame(level);
-        }
-
         private void btnMenu_Click(object sender, EventArgs e)
         {
             EnablePanel("menu");
@@ -875,13 +895,22 @@ namespace ClassicPikachu
             DrawPath(e.Graphics);
         }
 
+        private void btnEasy_Click(object sender, EventArgs e)
+        {
+            EnablePanel("game");
+            audioManager.PlaySoundEffect("click", 1f);
+            level = 0;
+            lblLevel.Text = "LEVEL: EASY";
+            StartGame(level, true);
+        }
+
         private void btnMedium_Click(object sender, EventArgs e)
         {
             EnablePanel("game");
             audioManager.PlaySoundEffect("click", 1f);
             level = 1;
             lblLevel.Text = "LEVEL: MEDIUM";
-            StartGame(level);
+            StartGame(level, true);
         }
 
         private void btnHard_Click(object sender, EventArgs e)
@@ -890,7 +919,7 @@ namespace ClassicPikachu
             audioManager.PlaySoundEffect("click", 1f);
             level = 2;
             lblLevel.Text = "LEVEL: HARD";
-            StartGame(level);
+            StartGame(level, true);
         }
 
         private void ResetTable(ref int[,] grid)
