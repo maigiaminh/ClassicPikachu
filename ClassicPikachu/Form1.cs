@@ -6,7 +6,7 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 
 namespace ClassicPikachu
 {
-    public partial class Form1 : Form
+    public partial class PikachuGame : Form
     {
         private Image[] images;
         private int[,] grid;
@@ -89,7 +89,7 @@ namespace ClassicPikachu
             images[35] = Properties.Resources._35;
         }
 
-        public Form1()
+        public PikachuGame()
         {
             InitializeComponent();
 
@@ -388,6 +388,8 @@ namespace ClassicPikachu
 
                         if (matchCount >= totalCell)
                         {
+                            audioManager.PlaySoundEffect("win");
+
                             isPlaying = false;
                             isPause = true;
                             countdownTimer.Stop();
@@ -636,6 +638,9 @@ namespace ClassicPikachu
                 {
                     dialogResult = MessageBox.Show($"You scored: {score}", "YOU LOST", MessageBoxButtons.OK);
                 }
+
+                audioManager.PlaySoundEffect("lose");
+
                 if (dialogResult == DialogResult.OK)
                 {
                     EnablePanel("menu");

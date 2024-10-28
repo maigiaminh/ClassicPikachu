@@ -1,6 +1,6 @@
 ﻿namespace ClassicPikachu
 {
-    partial class Form1
+    partial class PikachuGame
     {
         /// <summary>
         ///  Required designer variable.
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(PikachuGame));
             pictureBox1 = new PictureBox();
             pictureBox2 = new PictureBox();
             btnContinue = new PictureBox();
@@ -461,7 +461,7 @@
             pictureBox13.TabIndex = 0;
             pictureBox13.TabStop = false;
             // 
-            // Form1
+            // PikachuGame
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -471,10 +471,11 @@
             Controls.Add(chooseLevelPanel);
             Controls.Add(pausePanel);
             FormBorderStyle = FormBorderStyle.Fixed3D;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             MaximizeBox = false;
-            Name = "Form1";
+            Name = "PikachuGame";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "Form1";
+            Text = "Pikachu";
             FormClosing += Form1_FormClosing;
             FormClosed += Form1_FormClosed;
             Paint += Form1_Paint;

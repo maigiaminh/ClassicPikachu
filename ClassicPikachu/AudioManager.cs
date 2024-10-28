@@ -27,6 +27,8 @@ namespace ClassicPikachu
                 { "oho", @"Resources\oho.mp3" },
                 { "shuffle", @"Resources\shuffle.mp3" },
                 { "hit", @"Resources\hit.mp3" },
+                { "win", @"Resources\win.mp3" },
+                { "lose", @"Resources\lose.mp3" },
 
             };
             LoadSoundEffect();
@@ -90,7 +92,6 @@ namespace ClassicPikachu
             areSoundEffectsMuted = mute;
             foreach (var reader in soundEffectMusic)
             {
-                
                 reader.Volume = mute ? 0 : 1.0f; 
             }
         }
