@@ -36,7 +36,12 @@
 
 ## 📸 Screenshots
 
-### 🎮 Gameplay
+### 🎮 Menu
+
+![Menu Screenshot](https://raw.githubusercontent.com/maigiaminh/ClassicPikachu/main/assets/images/menu.png)
+
+
+### ⚔️ Gameplay
 
 ![Gameplay Screenshot](https://raw.githubusercontent.com/maigiaminh/ClassicPikachu/main/assets/images/gameplay.png)
 
